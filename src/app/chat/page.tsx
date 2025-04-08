@@ -8,6 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
 import { Send, User, Bot, Trash2, Clock } from 'lucide-react'
+// import { clearChatHistory } from '@/lib/chatbot'
 
 // 定义消息类型
 interface Message {
@@ -88,6 +89,7 @@ export default function Home() {
 
   const handleClear = () => {
     setMessages([])
+    // clearChatHistory() // 调用新函数
     toast.success('聊天记录已清除', {
       description: '所有消息已成功删除。'
     })

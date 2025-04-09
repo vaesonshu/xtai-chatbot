@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
 import { toast } from 'sonner'
-import { Send, User, Bot, Trash2, Clock } from 'lucide-react'
+import { Send, User, Bot, Trash2, Clock, Loader2 } from 'lucide-react'
 // import { clearChatHistory } from '@/lib/chatbot'
 
 // 定义消息类型
@@ -15,11 +15,6 @@ interface Message {
   text: string
   sender: 'user' | 'bot'
   timestamp: string
-}
-
-// 定义 API 响应类型
-interface ChatResponse {
-  reply: string
 }
 
 export default function Home() {
@@ -58,16 +53,28 @@ export default function Home() {
         throw new Error('API request failed')
       }
 
-      const data: ChatResponse = await res.json()
-      if (data.reply) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            text: data.reply,
-            sender: 'bot',
-            timestamp: new Date().toLocaleTimeString()
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      let botMessage = ''
+
+      setMessages((prev) => [...prev, { text: '', sender: 'bot', timestamp: new Date().toLocaleTimeString() }])
+
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+
+        const chunk = decoder.decode(value, { stream: true })
+        botMessage += chunk
+        setIsLoading(false)
+
+        setMessages((prev) => {
+          const updated = [...prev]
+          updated[updated.length - 1] = {
+            ...updated[updated.length - 1],
+            text: botMessage
           }
-        ])
+          return updated
+        })
       }
     } catch (error) {
       console.error('Error fetching chat response:', error)
@@ -87,12 +94,22 @@ export default function Home() {
     }
   }
 
-  const handleClear = () => {
+  const handleClear = async () => {
     setMessages([])
-    // clearChatHistory() // 调用新函数
-    toast.success('聊天记录已清除', {
-      description: '所有消息已成功删除。'
-    })
+    try {
+      const res = await fetch('/api/chat/clear', {
+        method: 'POST'
+      })
+      if (!res.ok) throw new Error('Failed to clear chat history')
+      toast.success('聊天记录已清除', {
+        description: '所有消息已成功删除。'
+      })
+    } catch (error) {
+      console.error('Error clearing chat history:', error)
+      toast.error('清除聊天记录失败', {
+        description: '请稍后再试。'
+      })
+    }
   }
 
   return (
@@ -119,11 +136,14 @@ export default function Home() {
             </div>
           </div>
         ))}
-        {isLoading && (
+        {isLoading && messages.length > 0 && (
           <div className="flex justify-start mb-4">
             <div className="flex items-start gap-2 max-w-[70%] p-3 rounded-lg bg-muted">
               <Bot className="w-5 h-5 flex-shrink-0" />
-              <Skeleton className="h-6 w-40" />
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span className="text-sm text-muted-foreground">思考中...</span>
+              </div>
             </div>
           </div>
         )}

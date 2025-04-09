@@ -1,4 +1,4 @@
-// app/page.tsx
+// app/chat/page.tsx
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
@@ -6,15 +6,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
-import { Send, User, Bot, Trash2, Clock, Loader2 } from 'lucide-react'
-// import { clearChatHistory } from '@/lib/chatbot'
+import { Send, User, Bot, Trash2, Loader2 } from 'lucide-react'
 
 // 定义消息类型
 interface Message {
   text: string
   sender: 'user' | 'bot'
-  timestamp: string
 }
 
 export default function Home() {
@@ -35,8 +34,7 @@ export default function Home() {
 
     const newMessage: Message = {
       text: input,
-      sender: 'user',
-      timestamp: new Date().toLocaleTimeString()
+      sender: 'user'
     }
     setMessages((prev) => [...prev, newMessage])
     setInput('')
@@ -57,7 +55,7 @@ export default function Home() {
       const decoder = new TextDecoder()
       let botMessage = ''
 
-      setMessages((prev) => [...prev, { text: '', sender: 'bot', timestamp: new Date().toLocaleTimeString() }])
+      setMessages((prev) => [...prev, { text: '', sender: 'bot' }])
 
       while (true) {
         const { done, value } = await reader.read()
@@ -85,8 +83,7 @@ export default function Home() {
         ...prev,
         {
           text: '抱歉，出了点问题！',
-          sender: 'bot',
-          timestamp: new Date().toLocaleTimeString()
+          sender: 'bot'
         }
       ])
     } finally {
@@ -116,7 +113,7 @@ export default function Home() {
     <div className="max-w-2xl mx-auto p-4 h-screen flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">简易聊天机器人</h1>
-        <Button variant="outline" size="icon" onClick={handleClear}>
+        <Button variant="ghost" size="icon" onClick={handleClear}>
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>
@@ -124,16 +121,26 @@ export default function Home() {
         {messages.length === 0 && !isLoading && <p className="text-center text-muted-foreground">开始聊天吧！</p>}
         {messages.map((msg, index) => (
           <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'} mb-4`}>
+            {msg.sender === 'bot' && (
+              <Avatar className="mr-2">
+                <AvatarFallback>
+                  <Bot className="w-6 h-6 flex-shrink-0" />
+                </AvatarFallback>
+              </Avatar>
+            )}
             <div className={`flex items-start gap-2 max-w-[70%] p-3 rounded-lg ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-              {msg.sender === 'user' ? <User className="w-5 h-5 flex-shrink-0" /> : <Bot className="w-5 h-5 flex-shrink-0" />}
               <div>
                 <span>{msg.text}</span>
-                <div className="flex items-center gap-1 text-xs opacity-70 mt-1">
-                  <Clock className="w-3 h-3" />
-                  {msg.timestamp}
-                </div>
               </div>
             </div>
+            {msg.sender === 'user' && (
+              <Avatar className="ml-2">
+                <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
+                <AvatarFallback>
+                  <User className="w-5 h-5 flex-shrink-0" />
+                </AvatarFallback>
+              </Avatar>
+            )}
           </div>
         ))}
         {isLoading && messages.length > 0 && (

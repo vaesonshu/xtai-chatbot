@@ -145,8 +145,12 @@ export default function Home() {
         ))}
         {isLoading && messages.length > 0 && (
           <div className="flex justify-start mb-4">
+            <Avatar className="mr-2">
+              <AvatarFallback>
+                <Bot className="w-6 h-6 flex-shrink-0" />
+              </AvatarFallback>
+            </Avatar>
             <div className="flex items-start gap-2 max-w-[70%] p-3 rounded-lg bg-muted">
-              <Bot className="w-5 h-5 flex-shrink-0" />
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin" />
                 <span className="text-sm text-muted-foreground">思考中...</span>
@@ -156,10 +160,9 @@ export default function Home() {
         )}
       </ScrollArea>
       <div className="flex gap-2">
-        <Input value={input} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)} onKeyPress={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && !isLoading && handleSend()} placeholder="输入消息..." className="flex-1" disabled={isLoading} />
-        <Button onClick={handleSend} disabled={isLoading}>
-          <Send className="w-4 h-4 mr-2" />
-          发送
+        <Input value={input} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)} onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && !isLoading && handleSend()} placeholder="输入消息..." className="flex-1" disabled={isLoading} />
+        <Button onClick={handleSend} disabled={isLoading} className="w-[50px]">
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </Button>
       </div>
     </div>

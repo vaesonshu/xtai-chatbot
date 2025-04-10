@@ -16,7 +16,7 @@ const model = new ChatDeepSeek({
 })
 
 // 定义系统提示模板，提供机器人角色和行为
-const systemPrompt = `
+const defaultSystemPrompt = `
 你是一个友好的助手，名字叫“小智”。请用简洁、自然的中文回答用户问题。
 如果用户问到你的身份，告诉他们你是 星途 AI 人工智能助手。
 始终保持礼貌，避免生成冗长的回答。
@@ -29,13 +29,17 @@ const memory = new BufferMemory({
 })
 
 // 流式输出函数
-export async function getChatResponseStream(userInput: string): Promise<ReadableStream> {
+export async function getChatResponseStream(userInput: string, customSystemPrompt?: string): Promise<ReadableStream> {
   try {
     // 构造包含历史和当前输入的消息
-    const history = await memory.loadMemoryVariables({})
+    const { history } = await memory.loadMemoryVariables({})
+    console.log('Memory variables:', history)
+    // 支持动态提示
+    const systemPrompt = customSystemPrompt || defaultSystemPrompt
     const messages = [
-      ...(history.history as (HumanMessage | AIMessage)[]), // 历史消息
-      new HumanMessage(`${systemPrompt}\n\n用户: ${userInput}`) // 当前输入
+      new SystemMessage(systemPrompt), // 系统提示
+      ...(history as (HumanMessage | AIMessage)[]), // 历史消息
+      new HumanMessage(userInput) // 当前用户输入
     ]
 
     // 获取流式响应
@@ -46,15 +50,21 @@ export async function getChatResponseStream(userInput: string): Promise<Readable
 
     return new ReadableStream({
       async start(controller) {
-        for await (const chunk of stream) {
-          console.log('Stream chunk:', chunk)
-          const text = chunk.content as string
-          fullResponse += text
-          controller.enqueue(new TextEncoder().encode(text))
+        try {
+          for await (const chunk of stream) {
+            // console.log('Stream chunk:', chunk)
+            const text = chunk.content as string
+            fullResponse += text
+            controller.enqueue(new TextEncoder().encode(text))
+          }
+          // 保存到内存
+          await memory.saveContext({ input: userInput }, { output: fullResponse })
+          controller.close()
+        } catch (error) {
+          console.error('Stream error:', error)
+          controller.enqueue(new TextEncoder().encode('抱歉，流式处理出错！'))
+          controller.close()
         }
-        // 保存到内存
-        await memory.saveContext({ input: userInput }, { output: fullResponse })
-        controller.close()
       },
       cancel() {
         console.log('Stream cancelled')

@@ -3,7 +3,7 @@ import { getChatResponseStream } from '@/lib/chatbot'
 import { NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
-  const { message }: { message: string } = await request.json()
+  const { message, systemPrompt }: { message: string; systemPrompt?: string } = await request.json()
 
   if (!message) {
     return new Response(JSON.stringify({ error: 'No message provided' }), {
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const stream = await getChatResponseStream(message)
+    const stream = await getChatResponseStream(message, systemPrompt)
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8', // 返回纯文本流

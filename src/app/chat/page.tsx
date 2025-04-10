@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
@@ -20,6 +21,7 @@ export default function Home() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(false)
+  const [mode, setMode] = useState<string>('friendly') // 动态模式
   const scrollAreaRef = useRef<HTMLDivElement>(null)
 
   // 自动滚动到底部
@@ -28,6 +30,17 @@ export default function Home() {
       scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
     }
   }, [messages])
+
+  const getSystemPrompt = () => {
+    switch (mode) {
+      case 'formal':
+        return '你是一个正式的助手，请用专业、礼貌的中文回答问题。'
+      case 'funny':
+        return '你是一个幽默的助手，请用风趣的中文回答问题，尽量让人开心。'
+      default:
+        return undefined // 使用默认提示
+    }
+  }
 
   const handleSend = async () => {
     if (!input.trim()) return
@@ -44,7 +57,7 @@ export default function Home() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input })
+        body: JSON.stringify({ message: input, systemPrompt: getSystemPrompt() })
       })
 
       if (!res.ok) {
@@ -113,9 +126,21 @@ export default function Home() {
     <div className="max-w-2xl mx-auto p-4 h-screen flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">简易聊天机器人</h1>
-        <Button variant="ghost" size="icon" onClick={handleClear}>
-          <Trash2 className="w-4 h-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Select value={mode} onValueChange={setMode}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="选择模式" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="friendly">友好模式</SelectItem>
+              <SelectItem value="formal">正式模式</SelectItem>
+              <SelectItem value="funny">幽默模式</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button variant="ghost" size="icon" onClick={handleClear}>
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
       </div>
       <ScrollArea className="flex-1 border rounded-md p-4 mb-4" ref={scrollAreaRef}>
         {messages.length === 0 && !isLoading && <p className="text-center text-muted-foreground">开始聊天吧！</p>}

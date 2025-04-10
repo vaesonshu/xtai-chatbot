@@ -10,6 +10,9 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
 import { Send, User, Bot, Trash2, Loader2 } from 'lucide-react'
+import ReactMarkdown from 'react-markdown' // 引入 Markdown 渲染
+import remarkGfm from 'remark-gfm' // 支持 GFM
+import rehypeHighlight from 'rehype-highlight'
 
 // 定义消息类型
 interface Message {
@@ -75,6 +78,7 @@ export default function Home() {
         if (done) break
 
         const chunk = decoder.decode(value, { stream: true })
+        console.log('Received chunk:', chunk)
         botMessage += chunk
         setIsLoading(false)
 
@@ -123,7 +127,7 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto p-4 h-screen flex flex-col">
+    <div className="max-w-[1200px] mx-auto p-4 h-screen flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">简易聊天机器人</h1>
         <div className="flex gap-2">
@@ -153,9 +157,11 @@ export default function Home() {
                 </AvatarFallback>
               </Avatar>
             )}
-            <div className={`flex items-start gap-2 max-w-[70%] p-3 rounded-lg ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
-              <div>
-                <span>{msg.text}</span>
+            <div className={`flex flex-wrap items-start gap-2 max-w-[70%] p-3 rounded-lg ${msg.sender === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+              <div className="prose prose-sm max-w-none">
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+                  {msg.text}
+                </ReactMarkdown>
               </div>
             </div>
             {msg.sender === 'user' && (

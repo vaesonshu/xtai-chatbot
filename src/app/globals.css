@@ -1,5 +1,10 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@tailwind utilities;
+
+@import 'tailwindcss/preflight';
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@import 'highlight.js/styles/github.css'; /* GitHub 风格 */
 
 @custom-variant dark (&:is(.dark *));
 

@@ -127,7 +127,7 @@ export default function Home() {
   }
 
   return (
-    <div className="max-w-[1200px] mx-auto p-4 h-screen flex flex-col">
+    <div className="max-w-[1000px] mx-auto p-4 h-screen flex flex-col">
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">简易聊天机器人</h1>
         <div className="flex gap-2">

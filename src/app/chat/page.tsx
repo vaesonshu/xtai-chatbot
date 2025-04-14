@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { toast } from 'sonner'
-import { Send, User, Bot, Trash2, Loader2 } from 'lucide-react'
+import { Send, User, Bot, Trash2, Loader2, Upload, X, Paperclip } from 'lucide-react'
 import ReactMarkdown from 'react-markdown' // 引入 Markdown 渲染
 import remarkGfm from 'remark-gfm' // 支持 GFM
 import rehypeHighlight from 'rehype-highlight'
@@ -25,7 +25,10 @@ export default function Home() {
   const [input, setInput] = useState<string>('')
   const [isLoading, setIsLoading] = useState<boolean>(false)
   const [mode, setMode] = useState<string>('friendly') // 动态模式
+  const [file, setFile] = useState<File | null>(null)
+  const [filePreview, setFilePreview] = useState<string>('')
   const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // 自动滚动到底部
   useEffect(() => {
@@ -34,6 +37,7 @@ export default function Home() {
     }
   }, [messages])
 
+  // 根据模式获取系统提示
   const getSystemPrompt = () => {
     switch (mode) {
       case 'formal':
@@ -45,6 +49,7 @@ export default function Home() {
     }
   }
 
+  // 发送消息
   const handleSend = async () => {
     if (!input.trim()) return
 
@@ -57,10 +62,22 @@ export default function Home() {
     setIsLoading(true)
 
     try {
+      const formData = new FormData()
+      formData.append('message', input)
+
+      if (getSystemPrompt()) {
+        formData.append('systemPrompt', getSystemPrompt()!)
+      }
+
+      if (file) {
+        formData.append('file', file)
+      }
+
       const res = await fetch('/api/chat', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: input, systemPrompt: getSystemPrompt() })
+        // headers: { 'Content-Type': 'application/json' },
+        // body: JSON.stringify({ message: input, systemPrompt: getSystemPrompt() })
+        body: formData
       })
 
       if (!res.ok) {
@@ -105,11 +122,46 @@ export default function Home() {
       ])
     } finally {
       setIsLoading(false)
+      setFile(null) // 清空文件
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
+  // 上传文件
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const uploadedFile = event.target.files?.[0]
+    if (uploadedFile) {
+      // 限制文件类型和大小（1MB）
+      if (uploadedFile.type !== 'text/plain') {
+        toast.error('仅支持文本文件 (.txt)')
+        return
+      }
+      if (uploadedFile.size > 1024 * 1024) {
+        toast.error('文件大小不能超过 1MB')
+        return
+      }
+      setFile(uploadedFile)
+      const previewText = await uploadedFile.text()
+      setFilePreview(previewText.slice(0, 200) + (previewText.length > 200 ? '...' : ''))
+      toast.success(`文件 "${uploadedFile.name}" 上传成功`, {
+        description: '请发送消息以分析文件内容。'
+      })
+    }
+  }
+
+  const handleRemoveFile = () => {
+    setFile(null)
+    setFilePreview('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
+    toast.info('文件已移除')
+  }
+
+  // 清除聊天记录
   const handleClear = async () => {
     setMessages([])
+    setFile(null)
+    setFilePreview('')
+    if (fileInputRef.current) fileInputRef.current.value = ''
     try {
       const res = await fetch('/api/chat/clear', {
         method: 'POST'
@@ -190,11 +242,32 @@ export default function Home() {
           </div>
         )}
       </ScrollArea>
+      {file && (
+        <div className="mb-2 p-3 bg-muted rounded-md flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium">已上传文件：{file.name}</p>
+            <pre className="text-xs text-muted-foreground mt-1">{filePreview}</pre>
+          </div>
+          <Button variant="ghost" size="icon" onClick={handleRemoveFile}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+      )}
       <div className="flex gap-2">
         <Input value={input} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)} onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => e.key === 'Enter' && !isLoading && handleSend()} placeholder="输入消息..." className="flex-1" disabled={isLoading} />
         <Button onClick={handleSend} disabled={isLoading} className="w-[50px]">
           {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="outline" asChild disabled={isLoading}>
+            <label>
+              <Paperclip className="w-4 h-4 mr-2" />
+              附件
+              <input type="file" accept=".txt" onChange={handleFileUpload} className="hidden" ref={fileInputRef} />
+            </label>
+          </Button>
+          <span className="text-xs text-muted-foreground">目前仅支持 .txt</span>
+        </div>
       </div>
     </div>
   )

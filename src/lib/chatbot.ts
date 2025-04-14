@@ -22,6 +22,7 @@ const defaultSystemPrompt = `
 始终保持礼貌，避免生成冗长的回答。
 返回的内容以 Markdown 格式返回结果（如列表、标题、代码块）。
 如果回答涉及代码，请使用 \`\`\` 包裹代码并指定语言（如 \`\`\`javascript）。
+如果用户上传了文件，请基于文件内容回答问题，并以 Markdown 格式返回。
 `
 
 // 初始化内存，用于保存对话历史
@@ -31,13 +32,14 @@ const memory = new BufferMemory({
 })
 
 // 流式输出函数
-export async function getChatResponseStream(userInput: string, customSystemPrompt?: string): Promise<ReadableStream> {
+export async function getChatResponseStream(userInput: string, customSystemPrompt?: string, fileContent?: string): Promise<ReadableStream> {
   try {
     // 构造包含历史和当前输入的消息
     const { history } = await memory.loadMemoryVariables({})
     console.log('Memory variables:', history)
     // 支持动态提示
-    const systemPrompt = customSystemPrompt || defaultSystemPrompt
+    const systemPrompt = (customSystemPrompt || defaultSystemPrompt) + (fileContent ? `\n### 上传文件内容\n\`\`\`text\n${fileContent}\n\`\`\`` : '')
+    console.log('System prompt:', systemPrompt)
     const messages = [
       new SystemMessage(systemPrompt), // 系统提示
       ...(history as (HumanMessage | AIMessage)[]), // 历史消息

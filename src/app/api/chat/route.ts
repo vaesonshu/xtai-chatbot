@@ -3,7 +3,12 @@ import { getChatResponseStream } from '@/lib/chatbot'
 import { NextRequest } from 'next/server'
 
 export async function POST(request: NextRequest) {
-  const { message, systemPrompt }: { message: string; systemPrompt?: string } = await request.json()
+  const formData = await request.formData()
+  const message = formData.get('message') as string
+  const systemPrompt = formData.get('systemPrompt') as string | undefined
+  const file = formData.get('file') as File | null
+  let fileContent = ''
+  // const { message, systemPrompt }: { message: string; systemPrompt?: string } = await request.json()
 
   if (!message) {
     return new Response(JSON.stringify({ error: 'No message provided' }), {
@@ -12,8 +17,14 @@ export async function POST(request: NextRequest) {
     })
   }
 
+  if (file) {
+    fileContent = await file.text()
+    console.log('File content:', fileContent)
+  }
+
   try {
-    const stream = await getChatResponseStream(message, systemPrompt)
+    console.log('fileContentfileContentfileContent??????:', fileContent)
+    const stream = await getChatResponseStream(message, systemPrompt, fileContent)
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8', // 返回纯文本流

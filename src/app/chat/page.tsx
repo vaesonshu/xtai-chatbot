@@ -132,17 +132,19 @@ export default function Home() {
     const uploadedFile = event.target.files?.[0]
     if (uploadedFile) {
       // 限制文件类型和大小（1MB）
-      if (uploadedFile.type !== 'text/plain') {
-        toast.error('仅支持文本文件 (.txt)')
+      const validTypes = ['text/plain', 'application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+      if (!validTypes.includes(uploadedFile.type)) {
+        toast.error('仅支持 .txt、.docx、.pdf 文件')
         return
       }
-      if (uploadedFile.size > 1024 * 1024) {
-        toast.error('文件大小不能超过 1MB')
+      if (uploadedFile.size > 5 * 1024 * 1024) {
+        toast.error('文件大小不能超过 5MB')
         return
       }
       setFile(uploadedFile)
-      const previewText = await uploadedFile.text()
-      setFilePreview(previewText.slice(0, 200) + (previewText.length > 200 ? '...' : ''))
+      // 简单预览（文件名和大小）
+      const preview = `文件名: ${uploadedFile.name}\n大小: ${(uploadedFile.size / 1024).toFixed(2)} KB`
+      setFilePreview(preview)
       toast.success(`文件 "${uploadedFile.name}" 上传成功`, {
         description: '请发送消息以分析文件内容。'
       })

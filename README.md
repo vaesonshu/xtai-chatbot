@@ -6,7 +6,7 @@
 
 ### 技术栈
 
-- Next.js
+- Next.js (已更新至最新版)
 - LangChain.js
 - DeepSeek
 
